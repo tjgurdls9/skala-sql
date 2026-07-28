@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>광주_1반_서혁인_종합실습4_조인비교_옵티마이저</title>
+<style>
+  body {
+    font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 24px;
+    line-height: 1.6;
+    color: #1a1a1a;
+  }
+  h1 { font-size: 22px; border-bottom: 3px solid #333; padding-bottom: 10px; }
+  h2 { font-size: 18px; margin-top: 36px; border-left: 5px solid #555; padding-left: 10px; }
+  h3 { font-size: 15px; margin-top: 24px; color: #333; }
+  .meta { background: #f4f4f4; border: 1px solid #ddd; border-radius: 6px; padding: 14px 18px; margin: 16px 0; }
+  .meta dt { font-weight: bold; float: left; width: 110px; clear: left; }
+  .meta dd { margin: 0 0 6px 120px; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+  th, td { border: 1px solid #bbb; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #333; color: #fff; }
+  tr:nth-child(even) { background: #f7f7f7; }
+  code { background: #eee; padding: 1px 5px; border-radius: 3px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; }
+  pre { background: #272822; color: #f8f8f2; padding: 14px; border-radius: 6px; overflow-x: auto; font-size: 13px; }
+  .note { background: #fff8e1; border-left: 4px solid #f5b400; padding: 10px 16px; margin: 14px 0; }
+  .summary { background: #eef4ff; border-left: 4px solid #3366cc; padding: 10px 16px; margin: 14px 0; }
+  @media print {
+    body { margin: 0; }
+    h2 { break-before: page; }
+    h2:first-of-type { break-before: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<h1>광주_1반_서혁인_종합실습4_조인비교_옵티마이저</h1>
+
+<div class="meta">
+  <dl>
+    <dt>프로그램 설명</dt><dd>종합실습4 요구사항 중 "3가지 조인 전략 비교"와 "(Option) DBMS 엔진별 옵티마이저 조사"를 정리한 문서</dd>
+    <dt>설명 비고</dt><dd>조인 비교는 추측이 아니라, 실제 ecom_lab4 DB에서 enable_nestloop / enable_hashjoin / enable_mergejoin 옵션으로 플래너에게 강제로 각 조인 전략을 쓰게 한 뒤 EXPLAIN ANALYZE로 실측한 결과를 근거로 작성함</dd>
+    <dt>사용 데이터</dt><dd>ecom.orders, ecom.order_items (최근 30일 paid / shipped / delivered 주문, 약 1,898건 주문 · 5,234건 주문상세)</dd>
+    <dt>데이터 비고</dt><dd>실측 시각 2026-07-24, 로컬 PostgreSQL 18.4 기준. 데이터 규모가 작아(주문 9,650건) 실행시간 차이는 크지 않지만, Buffers(실제 읽은 페이지 수)로 보면 전략별 차이가 뚜렷하게 드러남</dd>
+    <dt>작성자</dt><dd>서혁인 (광주 1반)</dd>
+  </dl>
+</div>
+
+<h2>1. 테스트에 사용한 공통 쿼리</h2>
+<pre>SELECT o.order_id, oi.line_total
+FROM ecom.orders o
+JOIN ecom.order_items oi ON oi.order_id = o.order_id
+WHERE o.order_status IN ('paid','shipped','delivered')
+  AND o.order_ts &gt;= now() - interval '30 days';</pre>
+<p>동일한 쿼리를 enable_* 옵션으로 조인 전략만 바꿔가며 3번 실행했다.</p>
+
+<h2>2. 실측 결과 요약</h2>
+<table>
+  <thead>
+    <tr><th>조인 전략</th><th>Execution Time</th><th>Buffers(읽은 페이지 수)</th><th>핵심 동작</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Hash Join (플래너 기본 선택)</td><td>7.24 ms</td><td>368</td><td>order_items를 해시 테이블로 만들고, orders를 1번 스캔하며 매칭</td></tr>
+    <tr><td>Nested Loop Join (강제)</td><td>6.08 ms</td><td>5,836</td><td>orders 1,898건 각각에 대해 order_items 인덱스를 1,898번 반복 탐색(loops=1,898)</td></tr>
+    <tr><td>Merge Join (강제)</td><td>9.70 ms</td><td>421</td><td>양쪽을 order_id로 정렬(Sort) 후 병합. order_items에 별도 Sort 비용 발생</td></tr>
+  </tbody>
+</table>
+<div class="note">
+  실행시간은 캐시 효과 때문에 큰 차이가 안 보일 수 있지만, Buffers(버퍼 접근량)는 조인 전략별 부하를 훨씬 정직하게 보여준다.
+  Nested Loop이 실행시간은 비슷해도 버퍼 접근이 15배 이상 많다는 점이 핵심이다.
+</div>
+
+<h2>3. 조인별 차이점 정리</h2>
+
+<h3>3-1. Nested Loop Join (NLJ)</h3>
+<table>
+  <tr><th style="width:110px;">동작 방식</th><td>바깥 테이블(driving table)의 각 행마다, 안쪽 테이블에서 조건에 맞는 행을 매번 다시 찾는다. (o.order_id 1,898건 × 개별 인덱스 탐색)</td></tr>
+  <tr><th>장점</th><td>안쪽 테이블에 좋은 인덱스가 있고, 바깥 테이블 결과가 적을 때(선택도가 높을 때) 매우 빠르다. 메모리 사용량이 적고 첫 행을 즉시 반환해 LIMIT/스트리밍에 유리하다.</td></tr>
+  <tr><th>단점</th><td>바깥 테이블 행 수가 많아지면 반복 횟수(loops)가 그만큼 늘어나 O(N×M)에 가까워진다. 이번 실측에서 Buffers가 가장 높게 나온 이유다.</td></tr>
+  <tr><th>적합한 상황</th><td>"고객 1명의 주문 내역 조회"처럼 바깥 결과가 소수(수십~수백 건)인 조회</td></tr>
+</table>
+
+<h3>3-2. Hash Join</h3>
+<table>
+  <tr><th style="width:110px;">동작 방식</th><td>둘 중 작은(Build) 쪽을 메모리에 해시 테이블로 만들고, 큰(Probe) 쪽을 한 번만 스캔하며 해시로 매칭한다.</td></tr>
+  <tr><th>장점</th><td>양쪽 테이블이 크고 인덱스가 마땅치 않아도 O(N+M)에 가깝게 동작한다. 대용량 배치/집계성 쿼리에 강하다. 이번 실측에서 실행시간·Buffers 모두 가장 균형 잡힌 결과를 보였다.</td></tr>
+  <tr><th>단점</th><td>Build 쪽 데이터가 work_mem을 초과하면 디스크에 여러 배치로 나눠 써야 해서(Batches &gt; 1) 느려질 수 있다. 등가(=) 조인 조건에서만 사용 가능하다(범위 조인 불가).</td></tr>
+  <tr><th>적합한 상황</th><td>오늘 다룬 Q1~Q10처럼 대량의 orders ↔ order_items를 통째로 집계하는 리포트성 쿼리</td></tr>
+</table>
+
+<h3>3-3. Merge Join (Sort-Merge Join)</h3>
+<table>
+  <tr><th style="width:110px;">동작 방식</th><td>양쪽을 조인 키로 정렬한 뒤, 커서 두 개를 동시에 이동시키며 병합(merge)한다.</td></tr>
+  <tr><th>장점</th><td>양쪽이 이미 정렬돼 있거나(인덱스로 정렬 순서 보장) 정렬 비용이 저렴하면 매우 효율적이다. 부등호(&lt;, &gt;, BETWEEN) 조인 조건도 지원한다.</td></tr>
+  <tr><th>단점</th><td>어느 한쪽이라도 정렬이 안 되어 있으면 Sort 단계가 추가 비용으로 붙는다. 이번 실측에서 orders 쪽 Sort 때문에 세 전략 중 가장 느렸다.</td></tr>
+  <tr><th>적합한 상황</th><td>양쪽 모두 조인 키에 인덱스가 있어 정렬 비용이 거의 없는 경우, 혹은 범위 조인</td></tr>
+</table>
+
+<h3>3-4. 요약 비교표</h3>
+<table>
+  <thead>
+    <tr><th>구분</th><th>NLJ</th><th>Hash Join</th><th>Merge Join</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>시간복잡도(개략)</td><td>O(N×M)</td><td>O(N+M)</td><td>O(N log N + M log M)</td></tr>
+    <tr><td>메모리 사용</td><td>적음</td><td>Build 쪽 크기만큼 필요(work_mem)</td><td>Sort 버퍼 필요</td></tr>
+    <tr><td>조인 조건</td><td>모든 조건</td><td>등가(=)만</td><td>등가 + 범위</td></tr>
+    <tr><td>유리한 상황</td><td>소수 행 + 인덱스</td><td>대용량 배치 집계</td><td>이미 정렬된 데이터</td></tr>
+    <tr><td>Postgres 자동 선택 기준</td><td>통계상 결과 행이 적을 때</td><td>결과 행이 많고 등가조인일 때(오늘 데이터의 기본 선택)</td><td>정렬 비용이 저렴할 때</td></tr>
+  </tbody>
+</table>
+
+<h2>4. (Option) DBMS 엔진별 옵티마이저 특징 비교</h2>
+<table>
+  <thead>
+    <tr><th>구분</th><th>PostgreSQL</th><th>MySQL (InnoDB)</th><th>Oracle</th><th>SQL Server</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>옵티마이저 유형</td><td>Cost-Based (통계 기반)</td><td>Cost-Based (8.0+ 이후 고도화)</td><td>Cost-Based(CBO), 과거 Rule-Based 지원은 폐지됨</td><td>Cost-Based</td></tr>
+    <tr><td>통계 수집</td><td>ANALYZE / autovacuum의 auto-analyze</td><td>ANALYZE TABLE, persistent statistics(8.0+)</td><td>DBMS_STATS 패키지, 자동 통계 수집 잡</td><td>자동 통계 업데이트(기본 활성화), UPDATE STATISTICS</td></tr>
+    <tr><td>지원 조인 전략</td><td>Nested Loop, Hash Join, Merge Join</td><td>Nested Loop(Block Nested Loop 포함), Hash Join(8.0.18+)</td><td>Nested Loop, Hash Join, Sort-Merge Join</td><td>Nested Loop, Hash Match, Merge Join</td></tr>
+    <tr><td>실행계획 확인</td><td>EXPLAIN [ANALYZE]</td><td>EXPLAIN / EXPLAIN ANALYZE(8.0.18+)</td><td>EXPLAIN PLAN FOR + DBMS_XPLAN</td><td>SET SHOWPLAN_XML / 실행계획 보기(GUI)</td></tr>
+    <tr><td>실행계획 강제/힌트</td><td>세션 GUC(enable_hashjoin 등, 이번 실습에서 사용한 방식)</td><td>옵티마이저 힌트(/*+ ... */, 5.7+)</td><td>옵티마이저 힌트(/*+ ... */) 매우 풍부</td><td>쿼리 힌트(OPTION (HASH JOIN) 등), Plan Guide</td></tr>
+    <tr><td>병렬 실행</td><td>Parallel Seq/Index Scan, Parallel Hash Join(9.6+)</td><td>제한적(주로 DDL/일부 연산)</td><td>Parallel Query(오래전부터 강력히 지원)</td><td>Parallel Query(MAXDOP 옵션)</td></tr>
+    <tr><td>특이사항</td><td>MVCC 기반, 파티션 프루닝·Materialized View 등 오픈소스 대비 기능이 풍부</td><td>과거 옵티마이저가 상대적으로 단순했으나 8.0에서 Hash Join·CTE·Window Function 등 대폭 보강</td><td>오랜 역사의 매우 정교한 CBO, 힌트/파라미터를 폭넓게 제공, 라이선스 비용이 높음</td><td>Query Store로 실행계획 변화 추적, Adaptive Query Processing(2017+) 지원</td></tr>
+  </tbody>
+</table>
+
+<div class="summary">
+  정리: 넷 다 "비용 기반(Cost-Based) 옵티마이저"라는 큰 틀은 같지만, 통계를 얼마나 정교하게 다루는지, 힌트/강제 옵션을 얼마나 폭넓게 제공하는지, 병렬 처리 성숙도에서 차이가 난다.
+  오늘 실습에서 쓴 EXPLAIN ANALYZE와 enable_hashjoin 같은 GUC 강제 방식은 PostgreSQL 특유의 접근이며, Oracle/MySQL/SQL Server에서는 각자의 힌트 문법으로 동일한 실험을 할 수 있다.
+</div>
+
+</body>
+</html>
