@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>광주_1반_서혁인 - 종합실습4 (E-Commerce 매출 분석)</title>
+<link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0e1152;
+    --navy-deep: #020408;
+    --ink: #111827;
+    --purple: #6c4dff;
+    --blue: #3f51ff;
+    --teal: #2ee6c9;
+    --tint: #ece6ff;
+    --tint-blue: #e6eaf0;
+    --border: #dfe2ea;
+    --grad: linear-gradient(90deg, #6c4dff 0%, #3f51ff 100%);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "SUIT", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    font-size: 16.5px;
+    max-width: 980px;
+    margin: 0 auto 40px;
+    padding: 0 24px;
+    line-height: 1.7;
+    color: var(--ink);
+    background: #ffffff;
+  }
+  h1 {
+    font-size: 27px; color: var(--navy);
+    border-bottom: 3px solid var(--navy);
+    padding-bottom: 10px;
+  }
+  h2 { font-size: 21px; margin: 0; padding: 14px 26px; color: #fff; }
+  h3 {
+    font-size: 17px; margin-top: 22px; color: var(--navy);
+    border-bottom: 1px solid var(--border); padding-bottom: 5px;
+  }
+  .meta { border: 1px solid var(--border); border-left: 4px solid var(--navy); padding: 16px 20px; margin: 18px 0; border-radius: 0 10px 10px 0; }
+  .meta dt { font-weight: bold; float: left; width: 118px; clear: left; color: var(--navy); }
+  .meta dd { margin: 0 0 7px 128px; }
+  .toc { border: 1px solid var(--border); border-left: 4px solid var(--purple); padding: 16px 24px; border-radius: 0 10px 10px 0; }
+  .toc strong { color: var(--navy); font-size: 17px; }
+  .toc li { margin: 4px 0; }
+
+  /* ============ 표지 (본문과 같은 폭, 좌우 패딩만 상쇄 — 뷰포트 폭 트릭 사용 안 함) ============ */
+  .cover {
+    margin: 0 -24px;
+    min-height: 100vh;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: #fff;
+    padding: 70px 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    overflow-wrap: break-word;
+  }
+  .cover-tag {
+    display: inline-block; background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.28);
+    padding: 7px 18px; border-radius: 100vw; font-size: 13px; letter-spacing: .04em; margin-bottom: 34px;
+    max-width: fit-content;
+  }
+  .cover h1.cover-title { font-size: 86px; line-height: 1.05; font-weight: 800; margin: 0 0 20px; letter-spacing: -1.5px; color: #fff; border-bottom: none; padding-bottom: 0; }
+  .cover-sub { font-size: 30px; opacity: .88; line-height: 1.5; margin: 0 0 30px; }
+  .cover-divider {
+    width: 100%; max-width: 640px; height: 5px; border-radius: 4px;
+    background: linear-gradient(90deg, var(--purple), var(--teal));
+    margin: 0 auto 40px;
+  }
+  .cover-meta {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px 44px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.18);
+    border-radius: 16px; padding: 28px 32px; width: 100%; max-width: 640px;
+    margin: 0 auto; text-align: center;
+  }
+  .cover-meta div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .cover-meta span { font-size: 12.5px; opacity: .6; letter-spacing: .04em; }
+  .cover-meta strong { font-size: 16.5px; font-weight: 700; }
+  .cover-foot { margin: 26px auto 0; max-width: 640px; text-align: center; font-size: 13px; opacity: .5; }
+
+  /* ============ 문항/섹션 박스 ============ */
+  section.question, section.bigsection {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 0 26px 22px;
+    margin: 0 0 42px;
+    background: #fff;
+  }
+  section.question h2 { background: var(--grad); margin: 0 -26px 20px; }
+  section.bigsection h2 { background: var(--navy); margin: 0 -26px 20px; }
+
+  .req { background: var(--tint); border-left: 4px solid var(--purple); padding: 9px 16px; font-size: 16px; margin: 8px 0 16px; color: var(--navy); border-radius: 0 8px 8px 0; }
+  figure { margin: 12px 0 20px; }
+  figcaption { font-size: 14px; color: #555; margin-top: 5px; }
+  img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; display: block; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 15px; }
+  th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--navy); color: #fff; }
+  tr:nth-child(even) { background: #f8f8fb; }
+  code { background: var(--tint-blue); padding: 1px 6px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 14.5px; color: var(--navy); }
+  pre { background: var(--navy); color: #f2f2f5; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 14.5px; }
+  .note { background: var(--tint-blue); border-left: 4px solid var(--navy); padding: 12px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .summary { background: var(--tint); border-left: 4px solid var(--purple); padding: 12px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  hr.sep { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  @media print {
+    .cover { break-after: page; min-height: 267mm; }
+    section.question, section.bigsection { break-before: page; }
+    section.question:first-of-type { break-before: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="cover-tag">SKALA · SK AI Leader Academy — 스마트 데이터 이해 및 활용</div>
+  <h1 class="cover-title">종합실습4</h1>
+  <p class="cover-sub">E-Commerce 매출 분석 및 정리<br>쿼리 튜닝 전 · 후 비교 리포트</p>
+  <div class="cover-divider"></div>
+  <div class="cover-meta">
+    <div><span>과목</span><strong>스마트 데이터 이해 및 활용</strong></div>
+    <div><span>반</span><strong>광주 1반</strong></div>
+    <div><span>작성자</span><strong>서혁인</strong></div>
+    <div><span>작성일</span><strong>2026-07-24</strong></div>
+    <div><span>실습 DB</span><strong>PostgreSQL 18 (ecom_lab4)</strong></div>
+    <div><span>제출 파일명</span><strong>광주_1반_서혁인.pdf</strong></div>
+  </div>
+  <div class="cover-foot">본 문서는 로컬 PostgreSQL + DBeaver 환경에서 직접 실행/검증한 결과를 기반으로 작성되었습니다.</div>
+</section>
+
+<h1>종합실습4 — E-Commerce 매출 분석 및 정리</h1>
+
+<div class="meta">
+  <dl>
+    <dt>파일명</dt><dd>광주_1반_서혁인.pdf</dd>
+    <dt>프로그램 설명</dt><dd>SKALA 종합실습4 요구사항 Q1~Q11 튜닝 전/후 비교, Materialized View 활용, 3가지 조인 전략 비교, DBMS 옵티마이저 비교</dd>
+    <dt>설명 비고</dt><dd>모든 쿼리는 로컬 PostgreSQL(ecom_lab4 DB)에서 DBeaver로 직접 실행/캡처한 화면이며, 원본 SQL 전문은 별도 첨부파일(광주_1반_서혁인_종합실습4_쿼리모음.sql, _MV.sql)로 함께 제출함</dd>
+    <dt>사용 데이터</dt><dd>ecom 스키마 전체(customers, orders, order_items, products, categories, product_prices, inventory, reviews 등)</dd>
+    <dt>작성자</dt><dd>서혁인 (광주 1반)</dd>
+  </dl>
+</div>
+
+<div class="toc">
+  <strong>목차</strong>
+  <ol>
+    <li>Q1~Q11 튜닝 전/후 쿼리 및 결과</li>
+    <li>Materialized View (mv_daily_gmv) 활용</li>
+    <li>3가지 조인 전략 비교 (NLJ / Hash Join / Merge Join)</li>
+    <li>(Option) DBMS 엔진별 옵티마이저 비교</li>
+  </ol>
+</div>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<!-- Q1 -->
+<!-- ============================================================ -->
+<section class="question">
+<h2>Q1. 지난 한 달간 실제 팔린 총 금액 (paid + shipped + delivered)</h2>
+<div class="req">요구사항: 최근 1개월간 실제 판매 완료 상태(결제완료/배송중/배송완료)의 총 매출 조회</div>
+
+<figure><img src="captures/Q1_query.png"><figcaption>쿼리 (BEFORE / AFTER)</figcaption></figure>
+<figure><img src="captures/Q1_before_result.png"><figcaption>[BEFORE] 실행 결과 — 비sargable 날짜조건, Seq Scan, Rows Removed by Filter: 7,725, Execution Time ≈ 12.96ms</figcaption></figure>
+<figure><img src="captures/Q1_after_result.png"><figcaption>[AFTER] 실행 결과 — 복합 인덱스(idx_orders_status_ts) 활용, Bitmap Index Scan, Execution Time ≈ 7.87ms (약 1.6배 개선)</figcaption></figure>
+</section>
+
+<!-- ============================================================ -->
+<!-- Q2 -->
+<!-- ============================================================ -->
+<section class="question">
+<h2>Q2. 월별 주문 수 / 매출 / 주문당 평균 금액(AOV)</h2>
+<div class="req">요구사항: 월별로 몇 개의 주문이 있었는지, 매출과 주문당 평균 금액은 얼마인지 조회</div>
+
+<figure><img src="captures/Q2_query.png"><figcaption>쿼리 (BEFORE / AFTER)</figcaption></figure>
+<figure><img src="captures/Q2_before_result.png"><figcaption>[BEFORE] 실행 결과 — 상관 서브쿼리 2개 반복 실행(loops=7,307), Execution Time ≈ 24,007ms(24.0초)</figcaption></figure>
+<figure><img src="captures/Q2_after_result.png"><figcaption>[AFTER] 실행 결과 — 단일 GROUP BY 집계, Execution Time ≈ 27.3ms (약 880배 개선)</figcaption></figure>
+</section>
+
+<!-- ============================================================ -->
+<!-- Q3 -->
+<!-- ============================================================ -->
+<section class="question">
+<h2>Q3. 최근 90일 카테고리 매출 Top10</h2>
+<div class="req">요구사항: 최근 90일 매출 기준 카테고리 Top10 (LIMIT 10)</div>
+
+<figure><img src="captures/Q3_query.png"><figcaption>쿼리 (BEFORE / AFTER / BONUS)</figcaption></figure>
+<figure><img src="captures/Q3_before_result.png"><figcaption>[BEFORE] 실행 결과 — 그룹핑 grain 오류(카테고리×상품으로 쪼개짐), 비sargable 날짜조건, Execution Time ≈ 26.70ms</figcaption></figure>
+<figure><img src="captures/Q3_after_result.png"><figcaption>[AFTER] 실행 결과 — 카테고리 단위 그룹핑 정상화, sargable 날짜조건, Execution Time ≈ 22.24ms</figcaption></figure>
+<figure><img src="captures/Q3_bonus_result.png"><figcaption>[BONUS] 재귀 CTE(WITH RECURSIVE)로 카테고리 전체 경로(breadcrumb) 표시 — 시나리오의 "카테고리 트리 구조" 요구사항을 직접 구현한 확장판</figcaption></figure>
+</section>
+
+<!-- ============================================================ -->
+<!-- Q4 -->
+<!-- ============================================================ -->
+<section class="question">
+<h2>Q4. 제품별 누적매출 RANK() Top20</h2>
+<div class="req">요구사항: 제품별 누적매출 기준 RANK() 함수로 Top20 조회</div>
+
+<figure><img src="captures/Q4_query.png"><figcaption>쿼리 (BEFORE / AFTER)</figcaption></figure>
+<figure><img src="captures/Q4_before_result.png"><figcaption>[BEFORE] 실행 결과 — 자기상관 서브쿼리로 순위 계산, Buffers=525</figcaption></figure>
+<figure><img src="captures/Q4_after_result.png"><figcaption>[AFTER] 실행 결과 — RANK() 윈도우 함수, Buffers=264 (약 2배 감소)</figcaption></figure>
+</section>
+
+<!-- ============================================================ -->
+<!-- Q5 -->
+<!-- ============================================================ -->
+<section class="question">
+<h2>Q5. 고객 RFM (Recency / Frequency / Monetary), LIMIT 10</h2>
+<div class="req">요구사항: 고객이 얼마나 최근에, 얼마나 자주, 얼마나 많이 샀는지 (LIMIT 10)</div>
+
+<figure><img src="captures/Q5_query.png"><figcaption>쿼리 (BEFORE / AFTER)</figcaption></figure>
+<figure><img src="captures/Q5_before_result.png"><figcaption>[BEFORE] 실행 결과 — R/F/M을 상관 서브쿼리 3개로 각각 계산, Buffers=37,556</figcaption></figure>
+<figure><img src="captures/Q5_after_result.png"><figcaption>[AFTER] 실행 결과 — 단일 GROUP BY로 동시 집계, Buffers=394 (약 95배 감소)</figcaption></figure>
+</section>
+
+<!-- ============================================================ -->
+<!-- Q6 -->
+<!-- ============================================================ -->
+<section class="question">
+<h2>Q6. 첫 구매 후 30일 내 재구매율</h2>
+<div class="req">요구사항: 고객의 첫 구매일 기준 30일 이내 재구매 비율 계산</div>
+
+<figure><img src="captures/Q6_query.png"><figcaption>쿼리 (BEFORE / AFTER)</figcaption></figure>
+<figure><img src="captures/Q6_before_result.png"><figcaption>[BEFORE] 실행 결과 — 상관 서브쿼리(MIN) + 자기조인, Buffers=28,870</figcaption></figure>
+<figure><img src="captures/Q6_after_result.png"><figcaption>[AFTER] 실행 결과 — CTE + EXISTS, Buffers=5,926 (약 4.9배 감소)</figcaption></figure>
+</section>
+
+<!-- ============================================================ -->
+<!-- Q7 -->
+<!-- ============================================================ -->
+<section class="question">
+<h2>Q7. 재고가 임계치보다 낮은 상품 (품절 위험 상품)</h2>
+<div class="req">요구사항: qty_on_hand가 reorder_point 이하인, 곧 품절될 위험이 있는 상품 조회</div>
+
+<figure><img src="captures/Q7_query.png"><figcaption>쿼리 (BEFORE / AFTER)</figcaption></figure>
+<figure><img src="captures/Q7_before_result.png"><figcaption>[BEFORE] 실행 결과 — 스칼라 상관 서브쿼리로 product_name 조회, 불필요 컬럼(updated_at) 포함</figcaption></figure>
+<figure><img src="captures/Q7_after_result.png"><figcaption>[AFTER] 실행 결과 — JOIN + 부분 인덱스, 필요한 컬럼만 선택(MECE)</figcaption></figure>
+</section>
+
+<!-- ============================================================ -->
+<!-- Q8 -->
+<!-- ============================================================ -->
+<section class="question">
+<h2>Q8. 리뷰 평점 4.5 이상 & 리뷰 수 50개 이상 — 효자상품</h2>
+<div class="req">요구사항: 평점이 높고 리뷰가 많은 "효자상품" 판별</div>
+
+<figure><img src="captures/Q8_query.png"><figcaption>쿼리 (BEFORE / AFTER)</figcaption></figure>
+<figure><img src="captures/Q8_before_result.png"><figcaption>[BEFORE] 실행 결과 — 상관 서브쿼리 4개(SELECT 2개 + WHERE 2개) 중복 계산, Buffers=1,417</figcaption></figure>
+<figure><img src="captures/Q8_after_result.png"><figcaption>[AFTER] 실행 결과 — GROUP BY + HAVING 1-pass, Buffers=29 (약 49배 감소)</figcaption></figure>
+</section>
+
+<!-- ============================================================ -->
+<!-- Q9 -->
+<!-- ============================================================ -->
+<section class="question">
+<h2>Q9. 쿠폰 사용 영향 (사용 vs 미사용 평균 주문금액 비교)</h2>
+<div class="req">요구사항: 쿠폰을 쓴 주문과 안 쓴 주문의 평균 주문 금액 비교</div>
+
+<figure><img src="captures/Q9_query.png"><figcaption>쿼리 (BEFORE / AFTER)</figcaption></figure>
+<figure><img src="captures/Q9_before_result.png"><figcaption>[BEFORE] 실행 결과 — UNION ALL로 동일 테이블 2회 스캔, Buffers=708</figcaption></figure>
+<figure><img src="captures/Q9_after_result.png"><figcaption>[AFTER] 실행 결과 — CASE 그룹핑으로 1회 스캔, Buffers=354 (정확히 절반)</figcaption></figure>
+</section>
+
+<!-- ============================================================ -->
+<!-- Q10 -->
+<!-- ============================================================ -->
+<section class="question">
+<h2>Q10. 상위 1% 고객의 최근 60일 매출</h2>
+<div class="req">요구사항: 전체 누적매출 기준 상위 1% 고객의 최근 60일 매출 합계</div>
+
+<figure><img src="captures/Q10_query.png"><figcaption>쿼리 (BEFORE / AFTER)</figcaption></figure>
+<figure><img src="captures/Q10_before_result.png"><figcaption>[BEFORE] 실행 결과 — 주문상세 행마다 고객 평생매출 재계산, Buffers=102,485</figcaption></figure>
+<figure><img src="captures/Q10_after_result.png"><figcaption>[AFTER] 실행 결과 — 고객별 1회 집계 + PERCENT_RANK(), Buffers=708 (약 145배 감소, 결과값 동일 검증됨)</figcaption></figure>
+</section>
+
+<!-- ============================================================ -->
+<!-- Q11 -->
+<!-- ============================================================ -->
+<section class="question">
+<h2>Q11. 0으로 나누어도 에러 안 나는 나눗셈 (안전한 평균 계산)</h2>
+<div class="req">요구사항: f_safe_div 함수를 활용해 0으로 나누기 에러 없이 안전하게 평균 계산</div>
+
+<figure><img src="captures/Q11_query.png"><figcaption>쿼리 (BEFORE / AFTER)</figcaption></figure>
+<figure><img src="captures/Q11_before_result.png"><figcaption>[BEFORE] 실행 결과 — 일반 나눗셈(/) 사용 시 "division by zero" 에러 발생</figcaption></figure>
+<figure><img src="captures/Q11_after_result.png"><figcaption>[AFTER] 실행 결과 — f_safe_div 사용, 에러 없이 0으로 안전하게 반환</figcaption></figure>
+</section>
+
+<!-- ============================================================ -->
+<!-- Materialized View -->
+<!-- ============================================================ -->
+<section class="bigsection">
+<h2>2. Materialized View (mv_daily_gmv) 활용</h2>
+<div class="req">요구사항: 일별 총매출(GMV) 리포트를 mv_daily_gmv로 가속하고, 갱신 전략(오후 3시)을 설계</div>
+
+<figure><img src="captures/MV_query.png"><figcaption>MV 생성/조회/갱신 스크립트</figcaption></figure>
+<figure><img src="captures/MV_before_result.png"><figcaption>[BEFORE] 매번 JOIN+SUM으로 조회 — Execution Time ≈ 20.6ms, Buffers=354</figcaption></figure>
+<figure><img src="captures/MV_after_result.png"><figcaption>[AFTER] mv_daily_gmv 직접 조회 — Execution Time ≈ 0.039ms, Buffers=1 (약 500배 이상 개선)</figcaption></figure>
+<figure><img src="captures/MV_refresh_result.png"><figcaption>REFRESH MATERIALIZED VIEW CONCURRENTLY 실행 결과 (Statistics)</figcaption></figure>
+
+<div class="note">
+  <strong>갱신 전략 — 매일 오후 3시(15:00) 1회 REFRESH CONCURRENTLY</strong><br>
+  GMV 리포트는 초 단위 최신성이 필요 없는 "일 단위 경영 지표"이므로, 오전 주문/취소/환불이 어느 정도 정리되는 오후 시점에 하루 1회 갱신하는 것으로 설계했다.
+  REFRESH MATERIALIZED VIEW CONCURRENTLY를 사용해 갱신 중에도 리포트 조회가 막히지 않도록 했으며(단, UNIQUE 인덱스 ux_mv_daily_gmv_day 필요),
+  로컬 PC 환경에는 pg_cron이 기본 설치되어 있지 않아 OS 스케줄러(cron/launchd)에서 매일 15:00에
+  <code>psql -c "REFRESH MATERIALIZED VIEW CONCURRENTLY ecom.mv_daily_gmv;"</code> 를 실행하도록 등록하는 방식을 제안한다.
+</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Join Comparison -->
+<!-- ============================================================ -->
+<section class="bigsection">
+<h2>3. 3가지 조인 전략 비교 (Nested Loop / Hash Join / Merge Join)</h2>
+
+<h3>3-1. 테스트에 사용한 공통 쿼리</h3>
+<pre>SELECT o.order_id, oi.line_total
+FROM ecom.orders o
+JOIN ecom.order_items oi ON oi.order_id = o.order_id
+WHERE o.order_status IN ('paid','shipped','delivered')
+  AND o.order_ts &gt;= now() - interval '30 days';</pre>
+<p>동일한 쿼리를 <code>enable_nestloop</code> / <code>enable_hashjoin</code> / <code>enable_mergejoin</code> 옵션으로 조인 전략만 강제로 바꿔가며 3번 실행하여 실측했다.</p>
+
+<h3>3-2. 실측 결과 요약</h3>
+<table>
+  <thead><tr><th>조인 전략</th><th>Execution Time</th><th>Buffers</th><th>핵심 동작</th></tr></thead>
+  <tbody>
+    <tr><td>Hash Join (플래너 기본 선택)</td><td>7.24 ms</td><td>368</td><td>order_items를 해시 테이블로 만들고, orders를 1번 스캔하며 매칭</td></tr>
+    <tr><td>Nested Loop Join (강제)</td><td>6.08 ms</td><td>5,836</td><td>orders 1,898건 각각에 대해 order_items 인덱스를 1,898번 반복 탐색</td></tr>
+    <tr><td>Merge Join (강제)</td><td>9.70 ms</td><td>421</td><td>양쪽을 order_id로 정렬 후 병합, orders 쪽 별도 Sort 비용 발생</td></tr>
+  </tbody>
+</table>
+<div class="note">실행시간은 캐시 효과로 큰 차이가 안 보일 수 있지만, Buffers(버퍼 접근량)는 조인 전략별 부하를 훨씬 정직하게 보여준다. Nested Loop이 시간은 비슷해도 버퍼 접근이 15배 이상 많다.</div>
+
+<h3>3-3. 조인별 차이점</h3>
+<table>
+  <tr><th style="width:120px;">Nested Loop Join</th><td>
+    바깥 테이블 각 행마다 안쪽 테이블에서 조건에 맞는 행을 매번 다시 찾는다.
+    안쪽에 좋은 인덱스가 있고 바깥 결과가 적을 때(선택도가 높을 때) 빠르지만, 바깥 행 수가 많아지면 O(N×M)에 가까워진다.
+    "고객 1명의 주문 조회"처럼 결과가 소수인 조회에 적합하다.
+  </td></tr>
+  <tr><th>Hash Join</th><td>
+    작은 쪽(Build)을 메모리 해시 테이블로 만들고, 큰 쪽(Probe)은 한 번만 스캔하며 매칭한다.
+    O(N+M)에 가깝게 동작해 대용량 배치/집계성 쿼리에 강하다. 단, Build 쪽이 work_mem을 초과하면 배치가 나뉘어 느려질 수 있고, 등가(=) 조인에서만 사용 가능하다.
+  </td></tr>
+  <tr><th>Merge Join</th><td>
+    양쪽을 조인 키로 정렬한 뒤 커서 두 개를 이동시키며 병합한다.
+    이미 정렬돼 있으면 매우 효율적이고 범위(&lt;,&gt;,BETWEEN) 조인도 지원하지만, 정렬이 안 되어 있으면 Sort 비용이 추가된다.
+  </td></tr>
+</table>
+
+<h3>3-4. 요약 비교표</h3>
+<table>
+  <thead><tr><th>구분</th><th>NLJ</th><th>Hash Join</th><th>Merge Join</th></tr></thead>
+  <tbody>
+    <tr><td>시간복잡도(개략)</td><td>O(N×M)</td><td>O(N+M)</td><td>O(N log N + M log M)</td></tr>
+    <tr><td>메모리 사용</td><td>적음</td><td>Build 크기만큼(work_mem)</td><td>Sort 버퍼 필요</td></tr>
+    <tr><td>조인 조건</td><td>모든 조건</td><td>등가(=)만</td><td>등가 + 범위</td></tr>
+    <tr><td>유리한 상황</td><td>소수 행 + 인덱스</td><td>대용량 배치 집계</td><td>이미 정렬된 데이터</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ============================================================ -->
+<!-- Optimizer Comparison -->
+<!-- ============================================================ -->
+<section class="bigsection">
+<h2>4. (Option) DBMS 엔진별 옵티마이저 특징 비교</h2>
+<table>
+  <thead><tr><th>구분</th><th>PostgreSQL</th><th>MySQL (InnoDB)</th><th>Oracle</th><th>SQL Server</th></tr></thead>
+  <tbody>
+    <tr><td>옵티마이저 유형</td><td>Cost-Based</td><td>Cost-Based(8.0+ 고도화)</td><td>Cost-Based(CBO), 과거 Rule-Based 폐지</td><td>Cost-Based</td></tr>
+    <tr><td>통계 수집</td><td>ANALYZE / auto-analyze</td><td>ANALYZE TABLE, persistent statistics</td><td>DBMS_STATS 패키지</td><td>자동 통계 업데이트, UPDATE STATISTICS</td></tr>
+    <tr><td>지원 조인 전략</td><td>Nested Loop, Hash Join, Merge Join</td><td>Nested Loop, Hash Join(8.0.18+)</td><td>Nested Loop, Hash Join, Sort-Merge Join</td><td>Nested Loop, Hash Match, Merge Join</td></tr>
+    <tr><td>실행계획 확인</td><td>EXPLAIN [ANALYZE]</td><td>EXPLAIN / EXPLAIN ANALYZE(8.0.18+)</td><td>EXPLAIN PLAN FOR + DBMS_XPLAN</td><td>SHOWPLAN_XML / GUI 실행계획</td></tr>
+    <tr><td>힌트/강제</td><td>세션 GUC(enable_hashjoin 등)</td><td>옵티마이저 힌트(/*+ ... */)</td><td>옵티마이저 힌트 매우 풍부</td><td>쿼리 힌트, Plan Guide</td></tr>
+    <tr><td>병렬 실행</td><td>Parallel Hash Join(9.6+)</td><td>제한적</td><td>Parallel Query(오래전부터 지원)</td><td>Parallel Query(MAXDOP)</td></tr>
+  </tbody>
+</table>
+<div class="summary">
+  넷 다 비용 기반(Cost-Based) 옵티마이저라는 큰 틀은 같지만, 통계를 다루는 정교함, 힌트 제공 범위, 병렬 처리 성숙도에서 차이가 난다.
+  이번 실습에서 쓴 EXPLAIN ANALYZE와 enable_hashjoin 같은 GUC 강제 방식은 PostgreSQL 특유의 접근이며, 다른 엔진에서는 각자의 힌트 문법으로 동일한 실험이 가능하다.
+</div>
+</section>
+
+</body>
+</html>

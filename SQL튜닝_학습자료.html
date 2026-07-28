@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>SQL 튜닝 학습자료 — 종합실습4 리버스엔지니어링</title>
+<link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0e1152; --ink: #111827; --purple: #6c4dff; --blue: #3f51ff;
+    --teal: #2ee6c9; --tint: #ece6ff; --tint-blue: #e6eaf0; --border: #dfe2ea;
+    --grad: linear-gradient(90deg, #6c4dff 0%, #3f51ff 100%);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "SUIT", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    font-size: 16.5px; max-width: 940px; margin: 0 auto 60px; padding: 0 24px;
+    line-height: 1.75; color: var(--ink); background: #fff;
+  }
+  .hero {
+    margin: 0 -24px 40px; padding: 56px 50px;
+    background: linear-gradient(135deg, var(--navy) 0%, #1b1f5b 100%); color: #fff;
+  }
+  .hero-tag { display:inline-block; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.28);
+    padding:6px 16px; border-radius:100vw; font-size:12.5px; letter-spacing:.04em; margin-bottom:20px; }
+  .hero h1 { font-size:36px; margin:0 0 12px; }
+  .hero p { font-size:16px; opacity:.85; margin:0; max-width:640px; line-height:1.6; }
+  h2 { font-size:22px; color:var(--navy); margin-top:56px; padding-bottom:10px; border-bottom:3px solid var(--navy); }
+  h3 { font-size:17.5px; color:var(--navy); margin-top:30px; }
+  h4 { font-size:15.5px; color:var(--purple); margin:20px 0 6px; }
+  .howto { background:var(--tint); border-left:4px solid var(--purple); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0; }
+  .concept-map { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:18px 0 8px; }
+  .concept-map div { background:var(--tint-blue); border-radius:8px; padding:12px 16px; font-size:14.5px; }
+  .concept-map b { color:var(--navy); }
+  .q-card { border:1px solid var(--border); border-radius:10px; padding:20px 24px; margin:22px 0; }
+  .q-card h3 { margin-top:0; }
+  .tags { margin:6px 0 14px; }
+  .tag { display:inline-block; background:var(--tint); color:var(--navy); font-size:12px; font-weight:700;
+    padding:3px 10px; border-radius:100vw; margin-right:6px; }
+  pre { background:var(--navy); color:#f2f2f5; padding:14px 16px; border-radius:8px; overflow-x:auto; font-size:13.8px; margin:10px 0; }
+  code { background:var(--tint-blue); padding:1px 6px; border-radius:4px; font-family:"SFMono-Regular",Consolas,monospace; font-size:14px; color:var(--navy); }
+  details { border:1px solid var(--border); border-radius:8px; margin:10px 0; padding:0; overflow:hidden; }
+  summary {
+    cursor:pointer; list-style:none; padding:11px 16px; font-weight:700; color:var(--navy);
+    background:var(--tint-blue);
+  }
+  summary::-webkit-details-marker { display:none; }
+  summary::before { content:"▶ "; color:var(--purple); }
+  details[open] summary::before { content:"▼ "; }
+  details[open] summary { border-bottom:1px solid var(--border); }
+  .answer { padding:14px 18px; font-size:15.5px; }
+  .answer ul { margin:8px 0; padding-left:22px; }
+  table { border-collapse:collapse; width:100%; margin:14px 0; font-size:14.5px; }
+  th, td { border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:var(--navy); color:#fff; }
+  tr:nth-child(even) { background:#f8f8fb; }
+  .quiz { border:1px solid var(--border); border-radius:10px; padding:16px 20px; margin:14px 0; }
+  .quiz b { color:var(--navy); }
+  .next-list li { margin:6px 0; }
+  hr.sep { border:none; border-top:1px solid var(--border); margin:44px 0; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-tag">SKALA · 종합실습4 리버스엔지니어링 학습자료</div>
+  <h1>오늘 만든 걸 "내 지식"으로 바꾸기</h1>
+  <p>채용 면접에서 "이 쿼리 왜 이렇게 짜셨어요?"라는 질문에 막힘없이 답하는 게 목표. 각 문항마다 정답(AFTER 쿼리)을 먼저 보지 말고, "왜 이게 문제일까?"부터 스스로 생각해본 다음 접힌 답을 펼쳐서 확인하는 방식으로 만들었어.</p>
+</div>
+
+<h2>0. 개념 지도 — 오늘 다룬 것들</h2>
+<div class="concept-map">
+  <div><b>Sargable 조건</b> — 인덱스를 탈 수 있는 WHERE절 작성법 (Q1, Q3)</div>
+  <div><b>상관 서브쿼리의 함정</b> — N+1 문제, O(n²) (Q2, Q4, Q5, Q6, Q7, Q8, Q10)</div>
+  <div><b>윈도우 함수</b> — RANK(), PERCENT_RANK() (Q4, Q10)</div>
+  <div><b>EXPLAIN ANALYZE 읽는 법</b> — Buffers, loops, Rows Removed (전 문항)</div>
+  <div><b>인덱스 설계</b> — 복합/부분/유니크 인덱스 (Q1, Q7, MV)</div>
+  <div><b>MECE 컬럼 설계</b> — 필요한 컬럼만, 정확한 grain (Q3, Q7)</div>
+  <div><b>3대 조인 알고리즘</b> — NLJ / Hash Join / Merge Join</div>
+  <div><b>Materialized View</b> — 캐싱과 갱신 전략</div>
+  <div><b>재귀 CTE</b> — 트리 구조 순회 (Q3 보너스)</div>
+  <div><b>SCD2</b> — 가격 이력 관리와 매출 정합성 (Q1)</div>
+</div>
+
+<div class="howto">
+  <b>사용법</b>: 각 문항 카드에서 "정답 보기 전에 먼저 생각해볼 것"을 읽고, 실제 답을 펼치기 전에 스스로 1~2문장으로 설명해봐. 설명이 막히면 그게 바로 오늘 복습이 필요한 지점이야.
+</div>
+
+<hr class="sep">
+<h2>1. 문항별 리버스엔지니어링 워크북</h2>
+
+<div class="q-card">
+<h3>Q1. 지난 한 달간 실제 팔린 총 금액</h3>
+<div class="tags"><span class="tag">Sargable</span><span class="tag">Generated Column</span><span class="tag">SCD2</span></div>
+<p><b>먼저 생각해볼 것</b>: 아래 조건은 왜 인덱스를 못 탈까?</p>
+<pre>WHERE date_trunc('day', o.order_ts) >= date_trunc('day', now() - interval '1 month')</pre>
+<details>
+<summary>정답 보기</summary>
+<div class="answer">
+인덱스는 "컬럼 원본 값"을 기준으로 정렬되어 있어. <code>date_trunc(order_ts)</code>처럼 컬럼에 함수를 씌우면, DB는 모든 행에 대해 그 함수를 실제로 계산해봐야 조건을 만족하는지 알 수 있어 — 즉 인덱스를 건너뛰고 전체를 훑게 돼(Seq Scan). 반대로 <code>order_ts >= now() - interval '1 month'</code>처럼 <b>컬럼 자체를 그대로</b> 비교하면, DB는 인덱스에서 그 범위만 바로 찾아갈 수 있어(Bitmap Index Scan).
+<ul>
+<li><b>교훈</b>: WHERE절에서 컬럼을 함수로 감싸지 말 것. 함수를 써야 한다면 반대편(비교값) 쪽에 써라.</li>
+<li><b>추가로</b>: <code>oi.qty*oi.unit_price-oi.discount</code>를 매번 계산하지 않고 이미 저장된 <code>line_total</code>(GENERATED 컬럼)을 재사용한 것도 같은 맥락 — "이미 계산된 걸 또 계산하지 마라".</li>
+<li><b>SCD2 포인트</b>: 매출 계산에 <code>product_prices</code>(현재가)가 아니라 <code>order_items.unit_price</code>(구매 시점 가격)를 쓴 이유는? 가격은 시간이 지나며 바뀌는데, 과거 주문은 "그때 가격"으로 계산해야 매출이 정확함.</li>
+</ul>
+</div>
+</details>
+</div>
+
+<div class="q-card">
+<h3>Q2. 월별 주문 수 / 매출 / AOV</h3>
+<div class="tags"><span class="tag">상관 서브쿼리</span><span class="tag">N+1 문제</span></div>
+<p><b>먼저 생각해볼 것</b>: BEFORE 쿼리는 23.8초, AFTER는 27ms. 880배 차이가 어디서 나올까?</p>
+<details>
+<summary>정답 보기</summary>
+<div class="answer">
+BEFORE는 월별 COUNT/SUM을 <b>SELECT절 상관 서브쿼리 2개</b>로 계산했어. 이 서브쿼리는 바깥 쿼리(orders)의 <b>행 하나마다</b> 다시 실행돼 — 실측 EXPLAIN을 보면 <code>loops=7307</code>이라고 나와. 즉 "월별 집계"라는 6줄짜리 결과를 위해 서브쿼리를 7,307번 반복 실행한 거야.
+<ul>
+<li><b>교훈</b>: "그룹별로 뭔가 세고 싶다"는 요구는 거의 항상 <code>GROUP BY</code> 한 번으로 해결된다. SELECT절에 서브쿼리가 여러 개 보이면 일단 의심.</li>
+<li><b>암기 포인트</b>: 상관 서브쿼리 = "바깥 행 수만큼 반복 실행". 바깥 행이 몇 개인지가 곧 서브쿼리 실행 횟수.</li>
+</ul>
+</div>
+</details>
+</div>
+
+<div class="q-card">
+<h3>Q3. 최근 90일 카테고리 Top10 (+보너스: 재귀 CTE)</h3>
+<div class="tags"><span class="tag">MECE</span><span class="tag">그룹핑 grain</span><span class="tag">재귀 CTE</span></div>
+<p><b>먼저 생각해볼 것</b>: BEFORE 쿼리는 <code>GROUP BY c.category_id, c.category_name, p.product_id, p.product_name, p.sku, p.unit</code>로 묶었어. 이게 왜 "카테고리 Top10"이라는 요구사항에 안 맞을까?</p>
+<details>
+<summary>정답 보기</summary>
+<div class="answer">
+GROUP BY에 <code>p.product_id</code>(상품 단위 컬럼)가 섞여 들어가면, 실제로는 "카테고리 × 상품" 조합별로 그룹이 나뉘어. 카테고리 하나에 상품이 50개 있으면 그 카테고리가 결과에 최대 50번 나올 수 있다는 뜻 — "카테고리 Top10"을 요청했는데 사실상 상품 리스트가 나온 거야.
+<ul>
+<li><b>교훈</b>: GROUP BY에 넣는 컬럼 = 결과의 "행 단위(grain)"를 결정한다. 무엇을 묻는 질문인지(카테고리 단위? 상품 단위?)를 먼저 정하고 그 단위의 컬럼만 GROUP BY에 넣어야 함 — 이게 바로 MECE 컬럼 설계.</li>
+<li><b>재귀 CTE 보너스</b>: <code>WITH RECURSIVE</code>는 "앵커"(시작 조건, 여기선 <code>parent_id IS NULL</code>인 최상위 카테고리)와 "재귀"(자기 자신을 다시 조회하며 자식을 이어붙임) 두 부분으로 구성돼. 트리/계층 구조를 다룰 때 표준 패턴이야.</li>
+</ul>
+</div>
+</details>
+</div>
+
+<div class="q-card">
+<h3>Q4. 제품별 누적매출 RANK() Top20</h3>
+<div class="tags"><span class="tag">윈도우 함수</span><span class="tag">자기상관 서브쿼리</span></div>
+<p><b>먼저 생각해볼 것</b>: BEFORE는 "나보다 매출 높은 상품 수 + 1"을 서브쿼리로 계산했어. 왜 RANK()가 더 나을까?</p>
+<details>
+<summary>정답 보기</summary>
+<div class="answer">
+BEFORE 방식은 상품마다(600개) "전체 상품 매출을 다시 집계해서 나보다 높은 걸 세는" 작업을 반복해 — 상품 수가 늘어날수록 O(n²)에 가까워짐. <code>RANK() OVER (ORDER BY SUM(...) DESC)</code>는 한 번 정렬만 하고 그 순서대로 순위를 매기는 거라 O(n log n)이야.
+<ul>
+<li><b>교훈</b>: "순위를 매겨야 한다"는 요구는 <code>RANK()</code>/<code>DENSE_RANK()</code>/<code>ROW_NUMBER()</code> 윈도우 함수로 거의 항상 해결된다.</li>
+<li><b>RANK() vs DENSE_RANK() vs ROW_NUMBER() 차이 알아두기</b>: 동점 처리 방식이 다름 (RANK는 공동 1위 다음이 3위로 건너뜀, DENSE_RANK는 2위로 이어짐, ROW_NUMBER는 동점이어도 무조건 순차 번호).</li>
+</ul>
+</div>
+</details>
+</div>
+
+<div class="q-card">
+<h3>Q5. 고객 RFM (Recency/Frequency/Monetary)</h3>
+<div class="tags"><span class="tag">상관 서브쿼리 3중복</span><span class="tag">Buffers vs 실행시간</span></div>
+<p><b>먼저 생각해볼 것</b>: BEFORE/AFTER 실행시간은 29ms vs 22ms로 큰 차이가 안 나는데, Buffers는 37,556 vs 394로 95배 차이가 나. 왜 이 둘이 다르게 움직일까?</p>
+<details>
+<summary>정답 보기</summary>
+<div class="answer">
+실행시간은 이번 데이터가 작아서(고객 3,000명) 캐시에 다 올라가 있으면 빨리 끝나. 하지만 Buffers(실제로 읽은 데이터 페이지 수)는 "얼마나 많은 일을 했는지"를 더 정직하게 보여줘. 고객이 300만 명이라면 상관 서브쿼리 버전은 캐시로 감당이 안 돼서 시간도 같이 폭발적으로 늘어날 거야.
+<ul>
+<li><b>교훈</b>: 작은 테스트 데이터에서는 "실행시간"만 보고 튜닝 효과를 과소평가하기 쉽다. <b>Buffers(I/O량)</b>가 진짜 데이터 규모에서의 성능을 더 잘 예측한다.</li>
+</ul>
+</div>
+</details>
+</div>
+
+<div class="q-card">
+<h3>Q6. 첫 구매 후 30일 내 재구매율</h3>
+<div class="tags"><span class="tag">EXISTS</span><span class="tag">CTE</span></div>
+<p><b>먼저 생각해볼 것</b>: AFTER 쿼리는 왜 <code>COUNT(*)</code>나 <code>JOIN</code> 대신 <code>EXISTS</code>를 썼을까?</p>
+<details>
+<summary>정답 보기</summary>
+<div class="answer">
+"재구매를 했는지 여부"만 알면 되지, 몇 번 했는지는 필요 없어. <code>EXISTS</code>는 조건에 맞는 행을 <b>하나라도 찾으면 바로 멈추는</b>(short-circuit) 반면, <code>COUNT(*)</code>나 <code>JOIN</code>은 조건에 맞는 행을 전부 찾아야 해. "있냐 없냐"만 물을 땐 EXISTS가 항상 더 가볍다.
+<ul>
+<li><b>교훈</b>: "존재 여부"를 묻는 로직에는 EXISTS, "개수/값"이 필요한 로직에는 COUNT/JOIN.</li>
+</ul>
+</div>
+</details>
+</div>
+
+<div class="q-card">
+<h3>Q7. 재고 임계치 미만 상품 (품절 위험)</h3>
+<div class="tags"><span class="tag">부분 인덱스</span><span class="tag">MECE</span></div>
+<p><b>먼저 생각해볼 것</b>: <code>CREATE INDEX ... WHERE qty_on_hand <= reorder_point</code> 처럼 조건을 붙인 인덱스(부분 인덱스)를 왜 쓸까? 그냥 전체 인덱스를 만들면 안 되나?</p>
+<details>
+<summary>정답 보기</summary>
+<div class="answer">
+"품절 위험 상품"을 찾는 쿼리는 항상 <code>qty_on_hand <= reorder_point</code> 조건이 붙어. 전체 인덱스를 만들면 조건에 안 맞는 대다수 상품까지 인덱스에 다 들어가서 크기만 커지고 낭비야. 부분 인덱스는 <b>그 조건에 맞는 행만</b> 인덱싱해서 크기는 작고 그 쿼리에는 딱 맞게 최적화됨.
+<ul>
+<li><b>교훈</b>: 항상 같이 붙는 WHERE 조건이 있다면 부분 인덱스를 고려. (다만 이번 실습 데이터는 작아서 플래너가 여전히 Seq Scan을 택함 — 데이터가 커지면 진가를 발휘)</li>
+<li><b>MECE 포인트</b>: BEFORE에 있던 <code>updated_at</code> 컬럼은 요구사항과 무관해서 제거함 — "일단 다 넣고 보자"가 아니라 질문에 답하는 데 필요한 컬럼만.</li>
+</ul>
+</div>
+</details>
+</div>
+
+<div class="q-card">
+<h3>Q8. 리뷰 4.5점 이상 & 50개 이상 — 효자상품</h3>
+<div class="tags"><span class="tag">HAVING</span><span class="tag">중복 집계</span></div>
+<p><b>먼저 생각해볼 것</b>: BEFORE는 같은 집계(평점 평균, 리뷰 수)를 4번 반복 계산했어. AFTER는 왜 <code>HAVING</code>을 썼을까?</p>
+<details>
+<summary>정답 보기</summary>
+<div class="answer">
+<code>HAVING</code>은 <code>GROUP BY</code>로 이미 집계된 결과에 대해 조건을 거는 절이야. "평균 4.5 이상 AND 개수 50 이상"이라는 조건 자체가 "집계 결과에 대한 조건"이니까, 집계를 먼저(GROUP BY) 하고 그 결과에 HAVING으로 필터링하면 한 번의 집계로 끝나.
+<ul>
+<li><b>교훈</b>: WHERE는 집계 전 행 필터링, HAVING은 집계 후 그룹 필터링. "평균이 얼마 이상"같은 조건은 무조건 HAVING.</li>
+</ul>
+</div>
+</details>
+</div>
+
+<div class="q-card">
+<h3>Q9. 쿠폰 사용 영향 비교</h3>
+<div class="tags"><span class="tag">UNION ALL</span><span class="tag">CASE 그룹핑</span></div>
+<p><b>먼저 생각해볼 것</b>: "A그룹과 B그룹을 비교"할 때 UNION ALL로 두 번 쿼리하는 것과 CASE로 한 번에 묶는 것의 차이는?</p>
+<details>
+<summary>정답 보기</summary>
+<div class="answer">
+UNION ALL 버전은 "쿠폰 사용 주문"과 "쿠폰 미사용 주문"을 각각 독립적인 쿼리로 짜서, 결과적으로 <code>orders</code>/<code>order_items</code>를 <b>2번 스캔</b>해. <code>CASE WHEN ... THEN 'A' ELSE 'B' END</code>를 GROUP BY 키로 쓰면 테이블을 <b>1번만</b> 스캔하면서 두 그룹을 동시에 나눠 집계할 수 있어.
+<ul>
+<li><b>교훈</b>: "여러 조건별로 비교"하고 싶을 때 UNION으로 쿼리를 쪼개기 전에, CASE 그룹핑으로 한 번에 되는지 먼저 검토.</li>
+</ul>
+</div>
+</details>
+</div>
+
+<div class="q-card">
+<h3>Q10. 상위 1% 고객의 최근 60일 매출</h3>
+<div class="tags"><span class="tag">PERCENT_RANK</span><span class="tag">144배 차이</span></div>
+<p><b>먼저 생각해볼 것</b>: 이 문항이 오늘 중 Buffers 차이가 가장 컸어(102,485 → 708, 약 145배). 왜 이렇게 극단적이었을까?</p>
+<details>
+<summary>정답 보기</summary>
+<div class="answer">
+BEFORE는 "고객의 평생 누적매출"을 <b>주문상세(order_item) 행 하나하나마다</b> 다시 계산했어 — 최근 60일 주문상세가 13,000여 건이면, 13,000번 가까이 "전체 주문 내역을 다시 훑어서 합산"한 셈. AFTER는 고객별 평생매출을 <b>먼저 한 번만</b> 집계(CTE)하고, 그 결과에 <code>PERCENT_RANK()</code>로 상위 1%를 뽑은 다음, 최근 60일 매출과 JOIN만 함 — 무거운 집계가 딱 1번.
+<ul>
+<li><b>교훈</b>: "이 값이 필요할 때마다 매번 계산"이 아니라 "한 번 계산해서 재사용"하는 게 핵심. CTE는 이런 "중간 결과 재사용"에 딱 맞는 도구.</li>
+</ul>
+</div>
+</details>
+</div>
+
+<div class="q-card">
+<h3>Q11. 0으로 나눠도 에러 안 나는 나눗셈</h3>
+<div class="tags"><span class="tag">UDF</span><span class="tag">방어적 프로그래밍</span></div>
+<p><b>먼저 생각해볼 것</b>: <code>SUM(revenue)/COUNT(orders)</code>가 위험한 이유는? 이걸 함수로 감싸는 이유는?</p>
+<details>
+<summary>정답 보기</summary>
+<div class="answer">
+분모(COUNT)가 0이 될 수 있는 상황(예: 특정 기간에 주문이 하나도 없는 카테고리)에서는 나눗셈 자체가 "division by zero" 에러를 던지고 쿼리 전체가 실패해. <code>f_safe_div(numer, denom)</code> 같은 UDF(사용자 정의 함수)는 분모가 0인지 먼저 검사해서, 0이면 안전한 기본값(0)을 반환하도록 만든 방어 로직이야.
+<ul>
+<li><b>교훈</b>: 나눗셈이 들어간 지표(평균, 비율, 전환율 등)는 분모가 0이 될 가능성을 항상 의심하고 방어 코드를 넣어야 함. 매번 CASE WHEN으로 감싸기보다, 자주 쓰는 로직이면 함수(UDF)로 만들어 재사용하는 게 실무적.</li>
+</ul>
+</div>
+</details>
+</div>
+
+<hr class="sep">
+<h2>2. 핵심 개념 딥다이브</h2>
+
+<h3>2-1. EXPLAIN ANALYZE 읽는 법 (제일 중요)</h3>
+<table>
+  <tr><th>키워드</th><th>의미</th><th>주목할 점</th></tr>
+  <tr><td>Seq Scan</td><td>테이블 전체를 처음부터 끝까지 훑음</td><td>테이블이 작으면 오히려 정상/최적. 크면 인덱스 검토</td></tr>
+  <tr><td>Index Scan / Bitmap Index Scan</td><td>인덱스로 필요한 부분만 찾음</td><td>Bitmap은 여러 조건을 OR/AND로 묶어 찾을 때 자주 등장</td></tr>
+  <tr><td>Rows Removed by Filter</td><td>조건에 안 맞아 버려진 행 수</td><td>이 숫자가 크면 "일단 다 읽고 나중에 거른다"는 뜻 → 인덱스 검토 신호</td></tr>
+  <tr><td>Buffers: shared hit=N</td><td>실제로 읽은 데이터 페이지 수</td><td>실행시간보다 더 안정적인 "일량" 지표</td></tr>
+  <tr><td>loops=N</td><td>이 노드가 반복 실행된 횟수</td><td>상관 서브쿼리를 의심할 때 제일 먼저 볼 숫자</td></tr>
+  <tr><td>Execution Time</td><td>실제 걸린 시간</td><td>캐시 상태 등에 따라 실행마다 변동 있음(참고용)</td></tr>
+</table>
+
+<h3>2-2. 3대 조인 알고리즘</h3>
+<table>
+  <tr><th>조인</th><th>동작</th><th>유리한 상황</th></tr>
+  <tr><td>Nested Loop</td><td>바깥 행마다 안쪽을 반복 탐색</td><td>결과가 적고 안쪽에 인덱스가 있을 때</td></tr>
+  <tr><td>Hash Join</td><td>작은 쪽을 해시테이블로 만들어 매칭</td><td>대용량 배치/집계, 등가(=) 조인</td></tr>
+  <tr><td>Merge Join</td><td>양쪽을 정렬 후 병합</td><td>이미 정렬돼 있거나 범위 조인</td></tr>
+</table>
+
+<h3>2-3. Materialized View</h3>
+<p>일반 VIEW는 조회할 때마다 원본 쿼리를 다시 실행해. Materialized View는 결과를 <b>디스크에 실제로 저장</b>해두고, <code>REFRESH</code>하기 전까지는 저장된 값을 그대로 돌려줘. 그래서 "조회는 빠르지만 최신 데이터가 아닐 수 있다"는 트레이드오프가 생기고, 이걸 언제(얼마나 자주) REFRESH할지 정하는 게 "갱신 전략"이야.</p>
+
+<hr class="sep">
+<h2>3. 자가 점검 퀴즈</h2>
+
+<div class="quiz"><b>Q.</b> WHERE절에 <code>LOWER(email) = 'abc@test.com'</code>이라고 썼다. 이게 왜 문제가 될 수 있나?
+<details><summary>답 보기</summary><div class="answer">email 컬럼에 함수(LOWER)를 씌워서 비sargable해짐 → 일반 인덱스를 못 탐. (참고: PostgreSQL은 함수 기반 인덱스를 따로 만들 수도 있음)</div></details>
+</div>
+
+<div class="quiz"><b>Q.</b> 상관 서브쿼리가 위험한 이유를 한 문장으로 설명해봐.
+<details><summary>답 보기</summary><div class="answer">바깥 쿼리의 행 수만큼 서브쿼리가 반복 실행돼서, 데이터가 커질수록 실행 비용이 기하급수적으로(대략 O(n²)) 늘어나기 때문.</div></details>
+</div>
+
+<div class="quiz"><b>Q.</b> "고객별 최근 구매일"을 구하는데 GROUP BY 없이 서브쿼리로 3번 계산한 걸 봤다. 어떻게 리팩토링할까?
+<details><summary>답 보기</summary><div class="answer">필요한 값(MAX, COUNT, SUM)을 한 번의 GROUP BY로 동시에 집계하도록 합친다.</div></details>
+</div>
+
+<div class="quiz"><b>Q.</b> EXPLAIN 결과에 Buffers=50,000, Execution Time=5ms가 나왔다. 이 쿼리를 안심해도 될까?
+<details><summary>답 보기</summary><div class="answer">아니다. 지금은 데이터가 작아서 캐시로 빠르게 처리됐을 뿐, Buffers가 크다는 건 실제 일량이 많다는 뜻이라 데이터가 커지면 느려질 가능성이 높다.</div></details>
+</div>
+
+<div class="quiz"><b>Q.</b> 부분 인덱스(Partial Index)는 언제 쓰는 게 좋을까?
+<details><summary>답 보기</summary><div class="answer">쿼리가 항상 특정 조건(예: 재고 부족, 활성 상태 등)이 붙어서 실행될 때, 그 조건에 맞는 행만 인덱싱해서 크기를 줄이고 그 쿼리에 최적화하기 위해.</div></details>
+</div>
+
+<div class="quiz"><b>Q.</b> Materialized View의 단점은 무엇인가?
+<details><summary>답 보기</summary><div class="answer">REFRESH하기 전까지는 최신 데이터를 반영하지 못한다 — 실시간성이 떨어질 수 있어서 갱신 주기를 데이터 특성에 맞게 설계해야 한다.</div></details>
+</div>
+
+<hr class="sep">
+<h2>4. 면접 예상 질문 (채용연계형 대비)</h2>
+<table>
+  <tr><th>질문</th><th>답변 프레임</th></tr>
+  <tr><td>"느린 쿼리를 어떻게 튜닝하시겠어요?"</td><td>① EXPLAIN ANALYZE로 병목 노드 찾기(Seq Scan/loops/Buffers) → ② 원인 분류(비sargable? 상관서브쿼리? 인덱스 부재?) → ③ 리라이트/인덱스 추가 → ④ 재측정으로 개선 검증</td></tr>
+  <tr><td>"상관 서브쿼리의 문제점은?"</td><td>바깥 행 수만큼 반복 실행(N+1) → GROUP BY/윈도우함수/CTE로 대체 가능한지 먼저 검토</td></tr>
+  <tr><td>"인덱스가 있는데 왜 Seq Scan을 쓰나요?"</td><td>옵티마이저는 비용 기반(Cost-Based)이라 테이블이 작으면 인덱스 탐색보다 순차 스캔이 더 쌀 수 있음 — 무조건 인덱스가 답은 아님</td></tr>
+  <tr><td>"Materialized View와 View의 차이는?"</td><td>View는 매번 재계산, MV는 결과를 저장해두고 REFRESH 시점에만 갱신 — 조회 속도 vs 최신성의 트레이드오프</td></tr>
+  <tr><td>"Nested Loop과 Hash Join, 언제 뭐가 유리한가요?"</td><td>결과 집합 크기와 인덱스 유무로 판단: 적은 결과+인덱스=NLJ, 대용량 집계=Hash Join</td></tr>
+</table>
+
+<hr class="sep">
+<h2>5. 다음 학습 추천</h2>
+<ul class="next-list">
+  <li>같은 쿼리를 데이터 100만 건 이상으로 늘려서 실측 — 이번엔 데이터가 작아 체감이 적었던 인덱스/조인 차이가 훨씬 뚜렷해짐</li>
+  <li><code>pg_stat_statements</code> 확장으로 "가장 느린 쿼리 Top N" 뽑아보기 (실무에서 병목을 찾는 실제 방법)</li>
+  <li>파티셔닝(Partitioning) — 시간 기준으로 테이블을 나누는 기법, 대용량 시계열 데이터에서 필수</li>
+  <li>VACUUM/ANALYZE의 역할 — 통계 정보가 오래되면 옵티마이저가 엉뚱한 계획을 세우는 이유</li>
+  <li>PostgreSQL 공식 문서 "Query Planning" 챕터 — 오늘 다룬 개념의 공식 설명</li>
+</ul>
+
+</body>
+</html>
