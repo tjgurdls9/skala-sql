@@ -23,8 +23,7 @@ e-commerce 스키마를 대상으로 느린 쿼리 11개를 튜닝했습니다.
 
 `captures/`에 문항별 튜닝 **전/후 실행 결과**와 쿼리 스크린샷이 `Q1_before_result.png` / `Q1_after_result.png` 형태로 짝지어 들어 있습니다. Materialized View는 `MV_` 접두사로 refresh 결과까지 포함했습니다.
 
-### `SQL튜닝_학습자료.html`
-튜닝 파트 정리 노트.
+교재형 `SQL튜닝_학습자료.html`은 업로드에서 제외하고 로컬에 보존합니다.
 
 ## 실행
 
