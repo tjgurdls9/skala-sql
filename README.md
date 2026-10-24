@@ -19,7 +19,6 @@ e-commerce 스키마를 대상으로 느린 쿼리 11개를 튜닝했습니다.
 - `광주_1반_서혁인_종합실습4_쿼리모음.sql` — 튜닝 대상 쿼리와 개선안
 - `광주_1반_서혁인_종합실습4_MV.sql` — Materialized View 적용
 - `광주_1반_서혁인_종합실습4_조인비교_옵티마이저.html` — 조인 방식별 옵티마이저 동작 비교
-- `광주_1반_서혁인.html` — 최종 제출 리포트
 
 `captures/`에 문항별 튜닝 **전/후 실행 결과**와 쿼리 스크린샷이 `Q1_before_result.png` / `Q1_after_result.png` 형태로 짝지어 들어 있습니다. Materialized View는 `MV_` 접두사로 refresh 결과까지 포함했습니다.
 
